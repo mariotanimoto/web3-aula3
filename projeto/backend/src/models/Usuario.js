@@ -1,7 +1,7 @@
 const { DataTypes, Model } = require('sequelize');
-const { sequelize } = require('../instances/mysql'); 
+const { sequelize } = require('../instances/mysql');
 
-class Usuario extends Model {}
+class Usuario extends Model { }
 
 Usuario.init(
   {
@@ -32,7 +32,15 @@ Usuario.init(
     sequelize,
     modelName: 'Usuario',
     tableName: 'usuarios',
-    timestamps: true
+    timestamps: true,
+    defaultScope: {
+      attributes: { exclude: ['senha'] },
+    },
+    scopes: {
+      comSenha: {
+        attributes: { include: ['senha'] },
+      }
+    }
   }
 );
 
