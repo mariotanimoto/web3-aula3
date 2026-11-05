@@ -26,6 +26,7 @@ module.exports = {
         allowNull: false,
       },
 
+
       foto: {
         type: Sequelize.TEXT('long'),
         allowNull: true,

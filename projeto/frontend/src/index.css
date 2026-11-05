@@ -237,3 +237,23 @@ body {
     padding: 1rem;
   }
 }
+/* Navegação da sidebar */
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-link.active {
+  color: var(--primary-color);
+  background-color: var(--badge-bg);
+  border-left-color: var(--primary-color);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .sidebar-link.active {
+    border-left-color: transparent;
+    border-bottom-color: var(--primary-color);
+  }
+}

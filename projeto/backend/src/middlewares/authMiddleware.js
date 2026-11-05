@@ -1,31 +1,29 @@
 const jwt = require('jsonwebtoken');
 
 const autenticar = (req, res, next) => {
-    const header = req.headers.authorization;
+    const [scheme, token] = (req.headers.authorization || '').split(' ');
 
-    if (!header) {
-        return res.status(401).json({ error: 'Token não enviado' });
+    if (scheme !== 'Bearer' || !token) {
+        return res.status(401).json({ error: 'Token Bearer não enviado' });
+    }
+    if (!process.env.JWT_SECRET) {
+        console.error('JWT_SECRET não está configurado');
+        return res.status(500).json({ error: 'Autenticação não configurada no servidor' });
     }
 
-    const token = header.split(' ')[1];  // remove a palavra "Bearer"
-
     try {
-        const payload = jwt.verify(token, process.env.JWT_SECRET);
-        req.usuario = payload;  // disponibiliza para o Controller
-        next();                 // libera a requisição
+        req.usuario = jwt.verify(token, process.env.JWT_SECRET);
+        return next();
     } catch (error) {
         return res.status(401).json({ error: 'Token inválido ou expirado' });
     }
 };
 
-const autorizar = (...perfisPermitidos) => {
-    return (req, res, next) => {
-        // req.usuario foi preenchido pelo middleware autenticar
-        if (!perfisPermitidos.includes(req.usuario.perfil)) {
-            return res.status(403).json({ error: 'Acesso negado' });
-        }
-        next();
-    };
+const autorizar = (...perfisPermitidos) => (req, res, next) => {
+    if (!req.usuario || !perfisPermitidos.includes(req.usuario.perfil)) {
+        return res.status(403).json({ error: 'Acesso negado' });
+    }
+    return next();
 };
 
 module.exports = { autenticar, autorizar };
