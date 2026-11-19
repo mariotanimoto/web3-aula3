@@ -1,7 +1,7 @@
 const { DataTypes, Model } = require('sequelize');
 const { sequelize } = require('../instances/mysql');
 
-class Usuario extends Model {}
+class Usuario extends Model { }
 
 Usuario.init(
   {
@@ -23,11 +23,6 @@ Usuario.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    perfil: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      defaultValue: 'usuario',
-    },
     foto: {
       type: DataTypes.TEXT('long'),
       allowNull: true,
@@ -41,6 +36,11 @@ Usuario.init(
     defaultScope: {
       attributes: { exclude: ['senha'] },
     },
+    scopes: {
+      comSenha: {
+        attributes: { include: ['senha'] },
+      }
+    }
   }
 );
 

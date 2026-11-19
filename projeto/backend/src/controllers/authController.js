@@ -4,19 +4,17 @@ const login = async (req, res) => {
     try {
         const { email, senha } = req.body;
 
-        if (typeof email !== 'string' || typeof senha !== 'string' || !email.trim() || !senha) {
+        if (!email || !senha) {
             return res.status(400).json({ error: 'Email e senha são obrigatórios' });
         }
 
-        const dados = await authService.login(email.trim().toLowerCase(), senha);
-        return res.status(200).json({ data: dados });
+        const usuario = await authService.login(email, senha);
+        return res.status(200).json({ data: usuario });
+
     } catch (error) {
         if (error.message === 'CREDENCIAIS_INVALIDAS') {
             return res.status(401).json({ error: 'Email ou senha inválidos' });
         }
-        console.error(error);
         return res.status(500).json({ error: 'Erro interno no login' });
     }
 };
-
-module.exports = { login };
