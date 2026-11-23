@@ -1,3 +1,4 @@
+
 const RAWG_BASE_URL = 'https://api.rawg.io/api';
 
 const allowedGameParams = [
@@ -7,6 +8,15 @@ const allowedGameParams = [
     'metacritic', 'exclude_collection', 'exclude_additions',
     'exclude_parents', 'exclude_game_series', 'exclude_stores', 'ordering'
 ];
+
+const allowedEsrbRatings = new Set([
+    'everyone',
+    'everyone-10-plus',
+    'teen'
+]);
+
+const isSafeGame = (game) =>
+    allowedEsrbRatings.has(game.esrb_rating?.slug);
 
 const requestRawg = async (path, params = {}) => {
     if (!process.env.RAWG_API_KEY) {
@@ -35,33 +45,54 @@ const requestRawg = async (path, params = {}) => {
     return response.json();
 };
 
+
 const getGames = async (params = {}) => {
     const safeParams = Object.fromEntries(
         Object.entries(params).filter(([key]) => allowedGameParams.includes(key))
     );
 
-    const data = await requestRawg('/games', {
-        page_size: 40,
-        ...safeParams
-    });
+    const requestedPage = Number(safeParams.page) || 1;
+    const requestedPageSize = Number(safeParams.page_size) || 20;
 
-    data.results = data.results.filter(game =>
-        game.esrb_rating?.slug !== 'adults-only' &&
-        game.esrb_rating?.slug !== 'rating-pending' &&
-        game.esrb_rating?.slug !== null
-    );
+    let results = [];
+    let rawgPage = requestedPage;
+    let totalCount = 0;
+    let next = null;
 
-    return data;
+    while (results.length < requestedPageSize) {
+        const data = await requestRawg('/games', {
+            ...safeParams,
+            page: rawgPage,
+            page_size: 40
+        });
+
+        totalCount = data.count || 0;
+
+        results.push(...(data.results || []).filter(isSafeGame));
+
+        next = data.next;
+        rawgPage++;
+
+        if (!next || !data.results?.length) {
+            break;
+        }
+    }
+
+    return {
+        count: totalCount,
+        results: results.slice(0, requestedPageSize),
+        next: next && results.length >= requestedPageSize
+            ? true
+            : null,
+        previous: requestedPage > 1
+    };
 };
+
 
 const getGameById = async (id) => {
     const game = await requestRawg(`/games/${encodeURIComponent(id)}`);
 
-    if (
-        game.esrb_rating?.slug === 'adults-only' ||
-        game.esrb_rating?.slug === 'rating-pending' ||
-        game.esrb_rating?.slug === null
-    ) {
+    if (!isSafeGame(game)) {
         const error = new Error('Este jogo não está disponível.');
         error.status = 404;
         throw error;

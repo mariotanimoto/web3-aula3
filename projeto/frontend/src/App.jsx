@@ -1,64 +1,62 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { Gamepad2, Sun, Moon, Activity } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { BrowserRouter, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
+import { Gamepad2, Library, Compass, LogOut } from 'lucide-react';
 import Home from './pages/Home/Home';
-import GameDetails from './pages/Home/GameDetails';
+import LibraryPage from './pages/Library/Library';
+import Login from './pages/Login/Login';
+import './App.css';
 
-function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+function Application() {
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
+  });
+  const navigate = useNavigate();
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    if (!localStorage.getItem('token')) setUser(null);
+  }, []);
 
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  const handleLogin = useCallback((data) => {
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.usuario));
+    setUser(data.usuario);
+    navigate('/');
+  }, [navigate]);
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    navigate('/login');
   };
 
+  if (!user) return <Routes><Route path="*" element={<Login onLogin={handleLogin} />} /></Routes>;
+
   return (
-    <BrowserRouter>
-      <div className="app-layout">
-        <aside className="sidebar">
-          <div className="sidebar-header">
-            <div className="brand" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Activity size={24} color="var(--primary-color)" />
-              GAME CATALOGUE
-            </div>
-          </div>
-          <Link to="/" className="sidebar-link" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Gamepad2 size={20} />
-            Games
-          </Link>
-        </aside>
-
-        <div className="right-area">
-          <nav className="top-navbar">
-            <div className="navbar-right">
-              <button
-                onClick={toggleTheme}
-                className="theme-toggle-btn"
-                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-              >
-                {theme === 'light' ? (
-                  <><Moon size={18} /></>
-                ) : (
-                  <><Sun size={18} /></>
-                )}
-              </button>
-            </div>
-          </nav>
-
-          <main className="page-content">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/games/:id" element={<GameDetails />} />
-            </Routes>
-          </main>
+    <div className="app-shell">
+      <header className="topbar">
+        <NavLink to="/" className="brand"><Gamepad2 /> GAME LIBRARY</NavLink>
+        <nav>
+          <NavLink to="/" end><Compass size={18} /> Discover</NavLink>
+          <NavLink to="/library"><Library size={18} /> My Library</NavLink>
+        </nav>
+        <div className="account">
+          {user.foto && <img src={user.foto} alt="" />}
+          <span>{user.nome}</span>
+          <button className="icon-button" onClick={logout} title="Sign out"><LogOut size={18} /></button>
         </div>
-      </div>
-    </BrowserRouter>
+      </header>
+      <main className="content">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/library" element={<LibraryPage />} />
+          <Route path="*" element={<Home />} />
+        </Routes>
+      </main>
+    </div>
   );
 }
 
-export default App;
+export default function App() {
+  return <BrowserRouter><Application /></BrowserRouter>;
+}

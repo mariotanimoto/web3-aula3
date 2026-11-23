@@ -21,11 +21,6 @@ module.exports = {
         unique: true,
       },
 
-      senha: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-
       foto: {
         type: Sequelize.TEXT('long'),
         allowNull: true,
