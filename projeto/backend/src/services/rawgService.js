@@ -51,15 +51,16 @@ const getGames = async (params = {}) => {
         Object.entries(params).filter(([key]) => allowedGameParams.includes(key))
     );
 
-    const requestedPage = Number(safeParams.page) || 1;
-    const requestedPageSize = Number(safeParams.page_size) || 20;
+    const requestedPage = Math.max(1, Number.parseInt(safeParams.page, 10) || 1);
+    const requestedPageSize = Math.min(40, Math.max(1, Number.parseInt(safeParams.page_size, 10) || 20));
+    const safeOffset = (requestedPage - 1) * requestedPageSize;
 
-    let results = [];
-    let rawgPage = requestedPage;
+    let safeGames = [];
+    let rawgPage = 1;
     let totalCount = 0;
-    let next = null;
+    let hasMoreRawgPages = true;
 
-    while (results.length < requestedPageSize) {
+    while (safeGames.length < safeOffset + requestedPageSize && hasMoreRawgPages) {
         const data = await requestRawg('/games', {
             ...safeParams,
             page: rawgPage,
@@ -67,23 +68,17 @@ const getGames = async (params = {}) => {
         });
 
         totalCount = data.count || 0;
-
-        results.push(...(data.results || []).filter(isSafeGame));
-
-        next = data.next;
+        safeGames.push(...(data.results || []).filter(isSafeGame));
+        hasMoreRawgPages = Boolean(data.next) && Boolean(data.results?.length);
         rawgPage++;
-
-        if (!next || !data.results?.length) {
-            break;
-        }
     }
+
+    const results = safeGames.slice(safeOffset, safeOffset + requestedPageSize);
 
     return {
         count: totalCount,
-        results: results.slice(0, requestedPageSize),
-        next: next && results.length >= requestedPageSize
-            ? true
-            : null,
+        results,
+        next: hasMoreRawgPages,
         previous: requestedPage > 1
     };
 };

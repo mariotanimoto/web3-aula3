@@ -12,6 +12,10 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
 app.use(express.json());
+const swaggerUi = require('swagger-ui-express');
+const openapi = require('./docs/openapi');
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapi));
 app.use('/api', router);
 
 sequelize.authenticate()
